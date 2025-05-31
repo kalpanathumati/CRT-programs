@@ -1,0 +1,112 @@
+import java.util.Scanner;
+import java.util.function.BiFunction;
+
+public class SimpleLambdaCalculator {
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Lambda expressions for operations
+        BiFunction<Double, Double, Double> add = (a, b) -> a + b;
+        BiFunction<Double, Double, Double> subtract = (a, b) -> a - b;
+        BiFunction<Double, Double, Double> multiply = (a, b) -> a * b;
+        BiFunction<Double, Double, Double> divide = (a, b) -> a / b;
+
+        while (true) {
+            double num1 = readDouble(scanner, "Enter first number: ");
+            String operator = readOperator(scanner);
+
+            double num2;
+            if (operator.equals("/")) {
+                num2 = readNonZeroDoubleOrExit(scanner, "Enter second number (non-zero for division) or type 'exit' to quit: ");
+            } else {
+                num2 = readDouble(scanner, "Enter second number: ");
+            }
+
+            double result = 0;
+            switch (operator) {
+                case "+":
+                    result = add.apply(num1, num2);
+                    break;
+                case "-":
+                    result = subtract.apply(num1, num2);
+                    break;
+                case "*":
+                    result = multiply.apply(num1, num2);
+                    break;
+                case "/":
+                    result = divide.apply(num1, num2);
+                    break;
+            }
+
+            System.out.println("Result: " + result);
+
+            System.out.print("Do you want to perform another calculation? (yes/no): ");
+            String again = scanner.nextLine().trim().toLowerCase();
+
+            if (!again.equals("yes")) {
+                System.out.println("Exiting program.");
+                break;
+            }
+        }
+
+        scanner.close();
+    }
+
+    // Method to read a valid double value
+    private static double readDouble(Scanner scanner, String prompt) {
+        double value;
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine();
+            try {
+                value = Double.parseDouble(input);
+                break; // valid number entered
+            } catch (NumberFormatException e) {
+                System.out.println("Enter valid numeric value.");
+            }
+        }
+        return value;
+    }
+
+    // Method to read a valid operator (+, -, *, /)
+    private static String readOperator(Scanner scanner) {
+        String op;
+        while (true) {
+            System.out.print("Enter operator (+, -, *, /): ");
+            op = scanner.nextLine();
+            if (op.equals("+") || op.equals("-") || op.equals("*") || op.equals("/")) {
+                break;
+            } else {
+                System.out.println("Invalid operator! Please enter one of +, -, *, /.");
+            }
+        }
+        return op;
+    }
+
+    // Method to read a non-zero double or allow exit
+    private static double readNonZeroDoubleOrExit(Scanner scanner, String prompt) {
+        double value;
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine();
+
+            if (input.equalsIgnoreCase("exit")) {
+                System.out.println("Exiting program.");
+                System.exit(0);
+            }
+
+            try {
+                value = Double.parseDouble(input);
+                if (value == 0) {
+                    System.out.println("Denominator cannot be zero. Please enter a non-zero value or type 'exit' to quit.");
+                } else {
+                    break; // valid non-zero number entered
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Enter valid numeric value.");
+            }
+        }
+        return value;
+    }
+}
