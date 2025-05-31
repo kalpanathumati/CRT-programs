@@ -1,112 +1,111 @@
 import java.util.Scanner;
 import java.util.function.BiFunction;
 
-public class SimpleLambdaCalculator {
-
+public class LambdaCalculator {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        // Lambda expressions for operations
+        // Define operations using lambda expressions
         BiFunction<Double, Double, Double> add = (a, b) -> a + b;
         BiFunction<Double, Double, Double> subtract = (a, b) -> a - b;
         BiFunction<Double, Double, Double> multiply = (a, b) -> a * b;
         BiFunction<Double, Double, Double> divide = (a, b) -> a / b;
 
         while (true) {
-            double num1 = readDouble(scanner, "Enter first number: ");
-            String operator = readOperator(scanner);
+            System.out.println("Available operations:");
+            System.out.println(" +  (Addition)");
+            System.out.println(" -  (Subtraction)");
+            System.out.println(" *  (Multiplication)");
+            System.out.println(" /  (Division)");
 
-            double num2;
+            String operator = "";
+            while (true) {
+                System.out.print("Enter an operator: ");
+                operator = scanner.next();
+                if (operator.equals("+") || operator.equals("-") || operator.equals("*") || operator.equals("/")) {
+                    break;
+                } else {
+                    System.out.println("Invalid operator! Please enter one of +, -, *, /");
+                }
+            }
+
+            double num1 = getValidDouble(scanner, "Enter first number: ");
+
+            double num2 = 0;
             if (operator.equals("/")) {
-                num2 = readNonZeroDoubleOrExit(scanner, "Enter second number (non-zero for division) or type 'exit' to quit: ");
+                while (true) {
+                    System.out.print("Enter second number (non-zero) or type 'exit' to cancel: ");
+                    String input = scanner.next();
+
+                    if (input.equalsIgnoreCase("exit")) {
+                        System.out.println("Division cancelled.");
+                        num2 = Double.NaN;  // signal cancellation
+                        break;
+                    }
+
+                    try {
+                        num2 = Double.parseDouble(input);
+                        if (num2 == 0) {
+                            System.out.println("Denominator cannot be zero. Please enter a non-zero number.");
+                        } else {
+                            break; // valid denominator entered
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid input. Please enter a numeric value or 'exit'.");
+                    }
+                }
             } else {
-                num2 = readDouble(scanner, "Enter second number: ");
+                num2 = getValidDouble(scanner, "Enter second number: ");
             }
 
-            double result = 0;
-            switch (operator) {
-                case "+":
-                    result = add.apply(num1, num2);
-                    break;
-                case "-":
-                    result = subtract.apply(num1, num2);
-                    break;
-                case "*":
-                    result = multiply.apply(num1, num2);
-                    break;
-                case "/":
-                    result = divide.apply(num1, num2);
-                    break;
-            }
+            if (operator.equals("/") && Double.isNaN(num2)) {
+                // Division cancelled, skip calculation
+            } else {
+                Double result = null;
+                switch (operator) {
+                    case "+":
+                        result = add.apply(num1, num2);
+                        break;
+                    case "-":
+                        result = subtract.apply(num1, num2);
+                        break;
+                    case "*":
+                        result = multiply.apply(num1, num2);
+                        break;
+                    case "/":
+                        result = divide.apply(num1, num2);
+                        break;
+                }
 
-            System.out.println("Result: " + result);
+                System.out.println("Result: " + result);
+            }
 
             System.out.print("Do you want to perform another calculation? (yes/no): ");
-            String again = scanner.nextLine().trim().toLowerCase();
+            String again = scanner.next();
 
-            if (!again.equals("yes")) {
-                System.out.println("Exiting program.");
+            if (!again.equalsIgnoreCase("yes")) {
+                System.out.println("Exiting calculator. Goodbye!");
                 break;
             }
+            System.out.println();
         }
 
         scanner.close();
     }
 
-    // Method to read a valid double value
-    private static double readDouble(Scanner scanner, String prompt) {
-        double value;
+    private static double getValidDouble(Scanner scanner, String prompt) {
+        double number;
         while (true) {
             System.out.print(prompt);
-            String input = scanner.nextLine();
+            String input = scanner.next();
             try {
-                value = Double.parseDouble(input);
-                break; // valid number entered
-            } catch (NumberFormatException e) {
-                System.out.println("Enter valid numeric value.");
-            }
-        }
-        return value;
-    }
-
-    // Method to read a valid operator (+, -, *, /)
-    private static String readOperator(Scanner scanner) {
-        String op;
-        while (true) {
-            System.out.print("Enter operator (+, -, *, /): ");
-            op = scanner.nextLine();
-            if (op.equals("+") || op.equals("-") || op.equals("*") || op.equals("/")) {
+                number = Double.parseDouble(input);
                 break;
-            } else {
-                System.out.println("Invalid operator! Please enter one of +, -, *, /.");
-            }
-        }
-        return op;
-    }
-
-    // Method to read a non-zero double or allow exit
-    private static double readNonZeroDoubleOrExit(Scanner scanner, String prompt) {
-        double value;
-        while (true) {
-            System.out.print(prompt);
-            String input = scanner.nextLine();
-
-            if (input.equalsIgnoreCase("exit")) {
-                System.out.println("Exiting program.");
-                System.exit(0);
-            }
-
-            try {
-                value = Double.parseDouble(input);
-                if (value == 0) {
-                    System.out.println("Denominator cannot be zero. Please enter a non-zero value or type 'exit' to quit.");
-                } else {
-                    break; // valid non-zero number entered
-                }
             } catch (NumberFormatException e) {
-                System.out.println("Enter valid numeric value.");
+                System.out.println("Invalid input. Please enter a valid numeric value.");
             }
         }
-        return value;
+        return number;
     }
 }
+
