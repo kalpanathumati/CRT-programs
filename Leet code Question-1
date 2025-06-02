@@ -1,0 +1,16 @@
+class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        HashMap<Integer,Integer> valIndexMap=new HashMap<>();
+        for(int i=0;i<nums.length;i++)
+        {
+            int complement=target-nums[i];
+            if(valIndexMap.containsKey(complement))
+            {
+                return new int[] {i,valIndexMap.get(complement)};
+            }
+            valIndexMap.put(nums[i],i);
+        }
+       return new int[] {};
+ 
+    }
+}
