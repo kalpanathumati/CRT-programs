@@ -1,0 +1,60 @@
+import java.util.*;
+
+public class FlexibleQueueRotation {
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        Queue<Integer> mainQueue = new LinkedList<>();
+        Queue<Integer> removedQueue = new LinkedList<>();
+
+        System.out.println("Enter 10 elements to enqueue into the main queue:");
+        for (int i = 0; i < 10; i++) {
+            System.out.print("Element " + (i + 1) + ": ");
+            mainQueue.offer(sc.nextInt());
+        }
+
+        System.out.println("\nInitial Queue: " + mainQueue);
+
+        System.out.println("\nEnter 5 elements (values) you want to remove:");
+        List<Integer> targets = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            System.out.print("Target " + (i + 1) + ": ");
+            targets.add(sc.nextInt());
+        }
+
+        int totalRotations = 0;
+
+        for (int target : targets) {
+            int rotations = 0;
+            boolean found = false;
+            int size = mainQueue.size();
+
+            // Rotate until the target is at the front
+            while (rotations < size) {
+                int front = mainQueue.peek();
+                if (front == target) {
+                    mainQueue.poll();               // Remove it
+                    removedQueue.offer(front);      // Store in removed queue
+                    found = true;
+                    break;
+                } else {
+                    mainQueue.offer(mainQueue.poll()); // Move front to back
+                    rotations++;
+                }
+            }
+
+            if (found) {
+                System.out.println("Removed " + target + " after " + rotations + " rotations.");
+                totalRotations += rotations;
+            } else {
+                System.out.println("Element " + target + " not found in queue.");
+            }
+        }
+
+        System.out.println("\nRemoved Elements Queue: " + removedQueue);
+        System.out.println("Remaining Main Queue: " + mainQueue);
+        System.out.println("Total Rotations Performed: " + totalRotations);
+
+        sc.close();
+    }
+}
