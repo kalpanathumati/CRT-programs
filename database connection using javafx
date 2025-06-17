@@ -1,5 +1,6 @@
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -18,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class JavaFXDBApp extends Application {
+public class JavaFXDBApp1 extends Application {
 
     // MySQL connection parameters - change these as per your MySQL setup
     private static final String MYSQL_HOST = "localhost";
@@ -67,13 +68,13 @@ public class JavaFXDBApp extends Application {
 
         mainContainer.getChildren().addAll(titleLabel, mainOperationButton);
 
-        Scene scene = new Scene(mainContainer, 700, 500);
+        Scene scene = new Scene(mainContainer, 700, 600);
         scene.getRoot().setStyle("-fx-background-color: #f9fafb;");
 
         stage.setTitle("JavaFX MySQL Database Manager");
         stage.setScene(scene);
         stage.setMinWidth(600);
-        stage.setMinHeight(500);
+        stage.setMinHeight(600);
         stage.show();
 
         stage.setOnCloseRequest(this::closeApp);
@@ -473,6 +474,15 @@ public class JavaFXDBApp extends Application {
 
         TableView<ObservableList<String>> tableView = new TableView<>();
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableView.setStyle("-fx-font-size: 14px;");
+        tableView.setFixedCellSize(30);
+
+        // Wrap the TableView in ScrollPane with max height for better data visibility
+        ScrollPane scrollPane = new ScrollPane(tableView);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        scrollPane.setMaxHeight(350);
+        scrollPane.setStyle("-fx-background: transparent;");
 
         loadDataBtn.setOnAction(e -> {
             String table = tablesComboBox.getSelectionModel().getSelectedItem();
@@ -481,85 +491,109 @@ public class JavaFXDBApp extends Application {
             }
         });
 
-        container.getChildren().addAll(header, selectTableLabel, tablesComboBox, loadDataBtn, tableView, formContainer);
+        container.getChildren().addAll(header, selectTableLabel, tablesComboBox, loadDataBtn, scrollPane, formContainer);
 
         mainContainer.getChildren().add(container);
     }
 
     private void loadTableData(TableView<ObservableList<String>> tableView, String tableName, VBox formContainer) {
-        tableView.getItems().clear();
-        tableView.getColumns().clear();
-        formContainer.getChildren().clear();
+    tableView.getItems().clear();
+    tableView.getColumns().clear();
+    formContainer.getChildren().clear();
 
-        List<ColumnInfo> columns = getTableColumns(tableName);
-        if (columns.isEmpty()) {
-            showError("Error", "No columns found in table.");
-            return;
+    List<ColumnInfo> columns = getTableColumns(tableName);
+    if (columns.isEmpty()) {
+        showError("Error", "No columns found in table.");
+        return;
+    }
+
+    // Create columns in the TableView
+    for (ColumnInfo column : columns) {
+        final int colIndex = columns.indexOf(column);
+        TableColumn<ObservableList<String>, String> col = new TableColumn<>(column.name);
+        col.setCellValueFactory(param -> new javafx.beans.property.SimpleStringProperty(param.getValue().get(colIndex)));
+        
+        // Set a preferred width for the column
+        col.setPrefWidth(150); // You can adjust this value based on your needs
+        col.setMinWidth(100); // Minimum width to prevent it from collapsing
+        col.setMaxWidth(300); // Maximum width to prevent it from expanding too much
+
+        tableView.getColumns().add(col);
+    }
+
+    ObservableList<ObservableList<String>> data = FXCollections.observableArrayList();
+
+    // Retrieve data from the database
+    try (Statement stmt = connection.createStatement();
+         ResultSet rs = stmt.executeQuery("SELECT * FROM `" + tableName.replace("`", "``") + "`")) {
+        while (rs.next()) {
+            ObservableList<String> row = FXCollections.observableArrayList();
+            for (ColumnInfo col : columns) {
+                String value = rs.getString(col.name);
+                row.add(value == null ? "" : value);
+            }
+            data.add(row);
         }
+    } catch (SQLException ex) {
+        showError("Error loading data", ex.getMessage());
+        return;
+    }
+
+    tableView.setItems(data);
+
+    // Alternating row colors for better visibility
+    tableView.setRowFactory(tv -> new TableRow<ObservableList<String>>() {
+        @Override
+        protected void updateItem(ObservableList<String> item, boolean empty) {
+            super.updateItem(item, empty);
+            if (item == null || empty) {
+                setStyle("");
+            } else {
+                setStyle(getIndex() % 2 == 0 ? "-fx-background-color: #ffffff;" : "-fx-background-color: #f0f0f0;");
+            }
+        }
+    });
+
+    // Add listener for row selection
+    tableView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+        formContainer.getChildren().clear();
+        if (newSelection == null) return;
+
+        Label instructions = new Label("Edit fields and press Update");
+        instructions.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 14));
+        instructions.setTextFill(javafx.scene.paint.Color.web("#2563eb"));
+
+        List<TextField> fieldEditors = new ArrayList<>();
 
         for (int i = 0; i < columns.size(); i++) {
-            final int colIndex = i;
-            TableColumn<ObservableList<String>, String> col = new TableColumn<>(columns.get(i).name);
-            col.setCellValueFactory(param -> new javafx.beans.property.SimpleStringProperty(param.getValue().get(colIndex)));
-            tableView.getColumns().add(col);
+            Label label = new Label(columns.get(i).name);
+            label.setFont(Font.font("Segoe UI", 13));
+            TextField tf = new TextField(newSelection.get(i));
+            tf.setFont(Font.font("Segoe UI", 14));
+            formContainer.getChildren().addAll(label, tf);
+            fieldEditors.add(tf);
         }
+        Button updateBtn = new Button("Update");
+        updateBtn.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 16));
+        updateBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-background-radius: 10;");
+        updateBtn.setOnMouseEntered(e -> updateBtn.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-background-radius: 10;"));
+        updateBtn.setOnMouseExited(e -> updateBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-background-radius: 10;"));
 
-        ObservableList<ObservableList<String>> data = FXCollections.observableArrayList();
-
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM `" + tableName.replace("`", "``") + "`")) {
-            while (rs.next()) {
-                ObservableList<String> row = FXCollections.observableArrayList();
-                for (ColumnInfo col : columns) {
-                    row.add(rs.getString(col.name));
-                }
-                data.add(row);
+        updateBtn.setOnAction(ev -> {
+            try {
+                updateTableRow(tableName, columns, newSelection, fieldEditors);
+                loadTableData(tableView, tableName, formContainer);
+                showInfo("Success", "Row updated successfully.");
+            } catch (Exception ex) {
+                showError("Update Failed", ex.getMessage());
             }
-        } catch (SQLException ex) {
-            showError("Error loading data", ex.getMessage());
-            return;
-        }
-
-        tableView.setItems(data);
-
-        tableView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            formContainer.getChildren().clear();
-            if (newSelection == null) return;
-
-            Label instructions = new Label("Edit fields and press Update");
-            instructions.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 14));
-            instructions.setTextFill(javafx.scene.paint.Color.web("#2563eb"));
-
-            List<TextField> fieldEditors = new ArrayList<>();
-
-            for (int i = 0; i < columns.size(); i++) {
-                Label label = new Label(columns.get(i).name);
-                label.setFont(Font.font("Segoe UI", 13));
-                TextField tf = new TextField(newSelection.get(i));
-                tf.setFont(Font.font("Segoe UI", 14));
-                formContainer.getChildren().addAll(label, tf);
-                fieldEditors.add(tf);
-            }
-            Button updateBtn = new Button("Update");
-            updateBtn.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 16));
-            updateBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-background-radius: 10;");
-            updateBtn.setOnMouseEntered(e -> updateBtn.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-background-radius: 10;"));
-            updateBtn.setOnMouseExited(e -> updateBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-background-radius: 10;"));
-
-            updateBtn.setOnAction(ev -> {
-                try {
-                    updateTableRow(tableName, columns, newSelection, fieldEditors);
-                    loadTableData(tableView, tableName, formContainer);
-                    showInfo("Success", "Row updated successfully.");
-                } catch (Exception ex) {
-                    showError("Update Failed", ex.getMessage());
-                }
-            });
-
-            formContainer.getChildren().add(0, instructions);
-            formContainer.getChildren().add(updateBtn);
         });
-    }
+
+        formContainer.getChildren().add(0, instructions);
+        formContainer.getChildren().add(updateBtn);
+    });
+}
+
 
     private void updateTableRow(String tableName, List<ColumnInfo> columns, ObservableList<String> oldRow, List<TextField> editors) throws SQLException {
         if (oldRow.size() != editors.size())
@@ -672,6 +706,15 @@ public class JavaFXDBApp extends Application {
 
         TableView<ObservableList<String>> tableView = new TableView<>();
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableView.setStyle("-fx-font-size: 14px;");
+        tableView.setFixedCellSize(30);
+
+        // Wrap the TableView in ScrollPane with max height for better data visibility
+        ScrollPane scrollPane = new ScrollPane(tableView);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        scrollPane.setMaxHeight(350);
+        scrollPane.setStyle("-fx-background: transparent;");
 
         Button deleteRowBtn = new Button("Delete Selected Row");
         deleteRowBtn.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 16));
@@ -730,7 +773,7 @@ public class JavaFXDBApp extends Application {
             }
         });
 
-        container.getChildren().addAll(header, selectTableLabel, tablesComboBox, loadDataBtn, tableView, deleteRowBtn);
+        container.getChildren().addAll(header, selectTableLabel, tablesComboBox, loadDataBtn, scrollPane, deleteRowBtn);
 
         mainContainer.getChildren().add(container);
     }
@@ -862,4 +905,6 @@ public class JavaFXDBApp extends Application {
         launch();
     }
 }
+
+
 
