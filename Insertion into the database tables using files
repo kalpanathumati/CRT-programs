@@ -1,0 +1,43 @@
+import java.io.*;
+import java.sql.*;
+import java.util.*;
+public class InsertFileExecutor {
+    public static void main(String[] args) {
+        String jdbcURL = "jdbc:mysql://localhost:3306/db"; // Replace with your DB
+        String dbUser = "root"; // Replace with your username
+        String dbPassword = "4525"; // Replace with your password
+        String filePath = "D:/insert.txt"; // Replace with your file path
+
+        try (Connection connection = DriverManager.getConnection(jdbcURL, dbUser, dbPassword);
+             Statement statement = connection.createStatement()) {
+
+            System.out.println("Connected to MySQL Database.");
+
+            List<String> sqlCommands = readSQLFile(filePath);
+            for (String command : sqlCommands) {
+                if (!command.trim().isEmpty()) {
+                    statement.execute(command);
+                    System.out.println("Executed: " + command);
+                }
+            }
+
+            System.out.println("All SQL commands executed successfully.");
+
+        } catch (SQLException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Read SQL commands from file (split by semicolon)
+    public static List<String> readSQLFile(String filePath) throws IOException {
+        StringBuilder contentBuilder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                contentBuilder.append(line).append("\n");
+            }
+        }
+        // Split commands by semicolon
+        return Arrays.asList(contentBuilder.toString().split(";"));
+    }
+}
