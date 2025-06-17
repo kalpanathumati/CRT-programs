@@ -1,0 +1,16 @@
+import java.util.HashMap;
+
+class Main {
+  public static void main(String[] args) {
+    HashMap<Integer, String> lang = new HashMap<>();
+
+    lang.put(1, "Java");
+    lang.put(2, "Python");
+    lang.put(3, "JavaScript");
+    System.out.println("HashMap: " + lang);
+
+    System.out.println("Keys: " + lang.keySet());
+    System.out.println("Values: " + lang.values());
+    System.out.println("Key/Value mappings: " + lang.entrySet());
+  }
+}
