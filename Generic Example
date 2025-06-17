@@ -1,0 +1,15 @@
+class Example<T> {
+    T obj;
+    Example(T obj) { this.obj = obj; }
+    public T getObject() { return this.obj; }
+}
+class Genr {
+    public static void main(String[] args)
+    {
+        Example<Integer> iObj = new Example<Integer>(15);
+        System.out.println(iObj.getObject());
+        Example<String> sObj
+            = new Test<String>("Welcome to AITS");
+        System.out.println(sObj.getObject());
+    }
+}
