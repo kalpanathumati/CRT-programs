@@ -1,5 +1,5 @@
 import java.util.*;
-class GfG {
+class Median{
     static double medianOf2(int[] a, int[] b) {
         int n = a.length, m = b.length;
         int i = 0, j = 0;
